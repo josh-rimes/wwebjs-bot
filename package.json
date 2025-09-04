@@ -1,0 +1,23 @@
+{
+  "name": "wwebjs-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp Web Bot",
+  "homepage": "https://github.com/josh-rimes/wwebjs-bot#readme",
+  "bugs": {
+    "url": "https://github.com/josh-rimes/wwebjs-bot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/josh-rimes/wwebjs-bot.git"
+  },
+  "license": "ISC",
+  "author": "josh-rimes",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \\\"Error: no test specified\\\" && exit 1"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.33.2"
+  }
+}
