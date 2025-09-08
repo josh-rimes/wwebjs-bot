@@ -1,3 +1,10 @@
-# Ignore environment files
+# Environment files
 .env
 *.env
+
+# Cache and auth files
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Local dependencies
+node_modules/
