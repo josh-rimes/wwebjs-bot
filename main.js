@@ -7,7 +7,7 @@ const OpenAI = require('openai');
 // Create new client instance
 const client = new Client({
     puppeteer: {
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        headless: true,
     },
     authStrategy: new LocalAuth()
 });
@@ -19,6 +19,9 @@ const openai = new OpenAI({
 });
 
 
+const BOT_NAME = "whatsuppbot";
+
+
 // When the client receives a QR-Code
 client.on('qr', (qr) => {
     console.log('QR-Code received.');
@@ -28,11 +31,7 @@ client.on('qr', (qr) => {
 
 // When the client is ready, run this code ONCE ONLY
 client.once('ready', async () => {
-    console.log('WhatsUpp bot is ready!');
-
-    const myNumber = process.env.PHONE_NUMBER + "@c.us";
-
-    await client.sendMessage(myNumber, "Hi! I'm your AI chat bot. Start chatting with me here.");
+    console.log('WhatsUppBot is ready!');
 });
 
 
@@ -41,37 +40,45 @@ let chatHistory = [];
 
 // Handle incoming messages
 client.on('message', async msg => {
-    const myNumber = process.env.PHONE_NUMBER + "@c.us";
+    const text = msg.body.toLowerCase();
 
-    // Ignore non-user messages
-    if (msg.from !== myNumber) return;
-
-    console.log("User message received.")
-    // Save message and maintain up to 10 responses in history
-    chatHistory.push({ role: "user", content: msg.body })
-    if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
-
+    // Find sender
+    const contact = await msg.getContact();
+    
     try {
-        // Ignore empty or media messages
-        if (!msg.body) return;
+        // Only respond when named and gnore empty or media messages
+        if (!text.includes(BOT_NAME.toLowerCase()) || !msg.body) 
+            {
+                console.log("Not my business!")
+                return;
+            }
+
+        console.log(`Mention detected from ${msg.from}: ${msg.body}`);
+
+        // Trim message and add it to chat history
+        const cleanText = msg.body.replace(new RegExp(BOT_NAME, "ig"), "").trim();
+        chatHistory.push({ role: "user", content: cleanText || msg.body })
+        if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
 
         // Send message to OpenAI
         const response = await openai.chat.completions.create({
             model: "gpt-4",
             messages: [
-                { role: "system", content: "You are a helpful AI assistant on WhatsApp. You are forbidden to provide any political viewpoints." },
+                { role: "system", content: "You are a helpful and friendly AI assistant called WhatsUppBot on WhatsApp. Only reply when directly mentioned. You are forbidden to provide any political viewpoints." },
                 ...chatHistory
             ]
         });
 
-        const reply = response.choices[0].message.content;
+        const replyText = response.choices[0].message.content;
+        const mentionText = `@${contact.number} ${replyText}`;
+
         // Save AI reply
-        chatHistory.push({ role: "assistant", content: reply });
-        await msg.reply(reply)
+        chatHistory.push({ role: "assistant", content: mentionText });
+        await msg.reply(mentionText, msg.from, { mentions: [contact] })
 
     } catch (err) {
         console.error("Error:", err.message);
-        await msg.reply("Sorry, something went wrong!")
+        await msg.reply(`Sorry @${contact.number}, something went wrong!`, msg.from, { mentions: [contact] })
     }
 });
 
